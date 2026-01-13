@@ -2,190 +2,309 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cover Art Converter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>CoverArt Ultra</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@500,700,900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
-    <div class="app-container">
-        <h1 class="app-title">ArtConverter <span>Pro</span></h1>
+    <div class="mesh-gradient"></div>
+    <div class="noise-overlay"></div>
 
-        <div class="mode-toggle">
-            <input type="radio" name="mode" id="mode-auto" value="auto" checked onchange="setMode('auto')">
-            <label for="mode-auto">Auto Center</label>
+    <main class="app-core">
+        
+        <div class="glass-panel">
             
-            <input type="radio" name="mode" id="mode-manual" value="manual" onchange="setMode('manual')">
-            <label for="mode-manual">Manual Crop</label>
-            <div class="toggle-bg"></div>
-        </div>
+            <header class="header">
+                <div class="brand">
+                    <div class="logo-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                    </div>
+                    <h1>Art<span class="highlight">X</span></h1>
+                </div>
+                <div class="quality-badge">HQ • 3000px</div>
+            </header>
 
-        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
-            <input type="file" id="fileInput" accept="image/*" hidden>
-            <div class="upload-content">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                <p id="fileName">Tap to Upload Artwork</p>
-                <span class="file-info">Supports JPG, PNG</span>
+            <div class="switch-container">
+                <div class="switch-track">
+                    <button class="switch-btn active" id="btn-auto" onclick="setMode('auto')">
+                        Auto AI
+                    </button>
+                    <button class="switch-btn" id="btn-manual" onclick="setMode('manual')">
+                        Manual Pro
+                    </button>
+                    <div class="switch-glider"></div>
+                </div>
             </div>
+
+            <div class="drop-zone" id="dropZone" onclick="selectFile()">
+                <input type="file" id="fileInput" accept="image/png, image/jpeg, image/webp" hidden>
+                <div class="zone-content">
+                    <div class="upload-icon-anim">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    </div>
+                    <h3 id="statusTitle">Upload Artwork</h3>
+                    <p id="statusDesc">Supports PNG, JPG, WebP</p>
+                </div>
+                <div class="progress-bar" id="progressBar"><div class="fill"></div></div>
+            </div>
+
+            <button id="actionBtn" class="hero-btn" disabled onclick="executeConvert()">
+                <span class="btn-text">Convert Now</span>
+                <span class="btn-icon">→</span>
+            </button>
+
         </div>
+    </main>
 
-        <button id="convertBtn" class="primary-btn" disabled onclick="processConversion()">
-            Convert & Download
-        </button>
-
-        <div id="statusText" class="status-text"></div>
-    </div>
-
-    <div id="cropModal" class="crop-modal">
-        <div class="crop-container">
-            <img id="cropImage" src="">
+    <div id="editorModal" class="editor-layer">
+        <div class="canvas-area">
+            <img id="editorImage" src="">
         </div>
         
-        <div class="crop-toolbar">
-            <div class="crop-controls">
-                <button onclick="cropper.zoom(-0.1)" class="tool-btn">
-                    <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
-                </button>
-                <button onclick="cropper.reset()" class="tool-btn">
-                   <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
-                </button>
-                <button onclick="cropper.zoom(0.1)" class="tool-btn">
-                    <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
-                </button>
+        <div class="toolbar-glass">
+            <div class="zoom-controls">
+                <button onclick="editorZoom(-0.1)">-</button>
+                <button onclick="editorReset()">Reset</button>
+                <button onclick="editorZoom(0.1)">+</button>
             </div>
-            <div class="crop-actions">
-                <button onclick="closeModal()" class="cancel-btn">Cancel</button>
-                <button onclick="finishCrop()" class="done-btn">Done</button>
+            <div class="main-controls">
+                <button class="btn-cancel" onclick="closeEditor(false)">Cancel</button>
+                <button class="btn-done" onclick="saveCrop()">Done</button>
             </div>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-    
-    <script>
-        let currentMode = 'auto';
-        let currentFile = null;
-        let cropper = null;
-        const fileInput = document.getElementById('fileInput');
-        const convertBtn = document.getElementById('convertBtn');
-        const statusText = document.getElementById('statusText');
-        const fileNameDisplay = document.getElementById('fileName');
-        const cropImage = document.getElementById('cropImage');
-        const cropModal = document.getElementById('cropModal');
+    <div id="toast" class="toast"></div>
 
-        function setMode(mode) {
-            currentMode = mode;
-            // Reset if switching modes
-            currentFile = null;
-            fileInput.value = '';
-            convertBtn.disabled = true;
-            fileNameDisplay.innerText = "Tap to Upload Artwork";
-            statusText.innerText = '';
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script>
+        // --- State Management ---
+        const state = {
+            mode: 'auto',
+            originalFile: null, // Asli file safe rahegi
+            activeFile: null,   // Jo file convert hogi
+            cropper: null
+        };
+
+        const DOM = {
+            fileInput: document.getElementById('fileInput'),
+            dropZone: document.getElementById('dropZone'),
+            actionBtn: document.getElementById('actionBtn'),
+            statusTitle: document.getElementById('statusTitle'),
+            statusDesc: document.getElementById('statusDesc'),
+            progressBar: document.getElementById('progressBar'),
+            editorModal: document.getElementById('editorModal'),
+            editorImage: document.getElementById('editorImage'),
+            glider: document.querySelector('.switch-glider'),
+            fill: document.querySelector('.fill'),
+            btnAuto: document.getElementById('btn-auto'),
+            btnManual: document.getElementById('btn-manual')
+        };
+
+        // --- Logic: Switch Mode & Memory ---
+        function setMode(newMode) {
+            if (state.mode === newMode) return;
+            
+            navigator.vibrate(10);
+            state.mode = newMode;
+            
+            // UI Toggle Animation
+            DOM.btnAuto.classList.toggle('active', newMode === 'auto');
+            DOM.btnManual.classList.toggle('active', newMode === 'manual');
+            DOM.glider.style.transform = `translateX(${newMode === 'auto' ? 0 : 100}%)`;
+
+            // Smart File Logic
+            if (state.originalFile) {
+                if (newMode === 'manual') {
+                    // Agar Auto me file thi, aur Manual dabaya -> Editor khulega
+                    openEditor(state.originalFile);
+                } else {
+                    // Agar Manual me the, aur Auto dabaya -> Editor band, Original file wapas
+                    closeEditor(true); 
+                    state.activeFile = state.originalFile;
+                    updateStatus(state.originalFile.name, 'Ready to Auto-Convert');
+                    enableButton();
+                }
+            } else {
+                // Koi file nahi hai, bas text reset karo
+                updateStatus('Upload Artwork', 'Supports PNG, JPG, WebP');
+                disableButton();
+            }
         }
 
-        fileInput.addEventListener('change', function(e) {
+        function selectFile() {
+            navigator.vibrate(5);
+            DOM.fileInput.click();
+        }
+
+        DOM.fileInput.addEventListener('change', handleFile);
+
+        function handleFile(e) {
             const file = e.target.files[0];
             if (!file) return;
 
-            if (currentMode === 'auto') {
-                currentFile = file;
-                fileNameDisplay.innerText = file.name;
-                convertBtn.disabled = false;
-                convertBtn.innerHTML = "Convert & Download";
-                statusText.innerText = "Ready to convert";
-            } else {
-                // Manual Mode: Open Modal
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    cropImage.src = event.target.result;
-                    openModal();
-                };
-                reader.readAsDataURL(file);
+            // PNG/JPG Validation
+            if (!file.type.match('image.*')) {
+                showToast('⚠️ Only Image files allowed', 'error');
+                return;
             }
-        });
 
-        function openModal() {
-            cropModal.style.display = 'flex';
-            // Init Cropper
-            if(cropper) cropper.destroy();
-            cropper = new Cropper(cropImage, {
-                aspectRatio: 1,
-                viewMode: 1,
-                dragMode: 'move', // Move image, not crop box
-                autoCropArea: 1,  // Maximize crop box
-                restore: false,
-                guides: false,
-                center: true,
-                highlight: false,
-                cropBoxMovable: false, // Force user to move image
-                cropBoxResizable: false,
-                toggleDragModeOnDblclick: false,
-            });
+            state.originalFile = file;
+            state.activeFile = file;
+            
+            navigator.vibrate(15);
+            DOM.dropZone.classList.add('file-loaded');
+
+            if (state.mode === 'auto') {
+                updateStatus(file.name, 'Ready to Auto-Convert');
+                enableButton();
+            } else {
+                openEditor(file);
+            }
         }
 
-        function closeModal() {
-            cropModal.style.display = 'none';
-            fileInput.value = ''; // Reset input
-            if(cropper) cropper.destroy();
-        }
-
-        function finishCrop() {
-            // Get cropped canvas (high quality)
-            cropper.getCroppedCanvas().toBlob((blob) => {
-                currentFile = blob;
-                // Add a filename property to blob for UX
-                currentFile.name = "cropped-image.png";
+        // --- Editor Logic ---
+        function openEditor(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                DOM.editorImage.src = e.target.result;
+                DOM.editorModal.style.visibility = 'visible';
+                DOM.editorModal.style.opacity = '1';
                 
-                fileNameDisplay.innerText = "Image Cropped & Ready";
-                convertBtn.disabled = false;
-                statusText.innerText = "Ready to convert";
-                
-                cropModal.style.display = 'none';
-                if(cropper) cropper.destroy();
-            }, 'image/png');
+                setTimeout(() => {
+                    if(state.cropper) state.cropper.destroy();
+                    state.cropper = new Cropper(DOM.editorImage, {
+                        aspectRatio: 1,
+                        viewMode: 1,
+                        dragMode: 'move',
+                        autoCropArea: 1,
+                        guides: false,
+                        center: true,
+                        highlight: false,
+                        background: false,
+                        toggleDragModeOnDblclick: false,
+                    });
+                }, 50);
+            };
+            reader.readAsDataURL(file);
         }
 
-        async function processConversion() {
-            if (!currentFile) return;
+        function editorZoom(ratio) { state.cropper.zoom(ratio); navigator.vibrate(5); }
+        function editorReset() { state.cropper.reset(); navigator.vibrate(10); }
+        
+        function closeEditor(keepFile = false) {
+            DOM.editorModal.style.opacity = '0';
+            setTimeout(() => DOM.editorModal.style.visibility = 'hidden', 300);
+            
+            // Logic: Agar cancel kiya aur pehle file nahi thi, to reset karo.
+            // Agar file thi, to usko wapas lao.
+            if (!keepFile && state.mode === 'manual') {
+                 if(state.originalFile) {
+                     state.activeFile = state.originalFile;
+                     updateStatus(state.originalFile.name, 'Using Original Image');
+                     enableButton();
+                 } else {
+                     resetAll();
+                 }
+            }
+        }
 
-            convertBtn.disabled = true;
-            convertBtn.innerHTML = "Processing...";
-            statusText.innerText = "Uploading & Converting...";
-            statusText.className = "status-text";
+        function saveCrop() {
+            navigator.vibrate(20);
+            // High Quality Crop Logic (No Client Resize)
+            state.cropper.getCroppedCanvas({
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high'
+            }).toBlob((blob) => {
+                state.activeFile = blob;
+                state.activeFile.name = "cropped_image.png";
+                
+                closeEditor(true); 
+                updateStatus('Manual Crop Done', 'Ready to Convert');
+                enableButton();
+            }, 'image/png', 1.0);
+        }
 
+        // --- Conversion Logic ---
+        async function executeConvert() {
+            if (!state.activeFile) return;
+            
+            setLoading(true);
             const formData = new FormData();
-            formData.append('file', currentFile, currentFile.name || 'image.png');
+            formData.append('file', state.activeFile, state.activeFile.name || 'image.png');
 
             try {
-                const response = await fetch('/convert', {
-                    method: 'POST',
-                    body: formData
-                });
+                DOM.fill.style.width = '70%'; 
+                
+                const response = await fetch('/convert', { method: 'POST', body: formData });
+                if (!response.ok) throw new Error('Server error');
 
-                if (!response.ok) throw new Error('Conversion failed');
-
+                DOM.fill.style.width = '100%';
+                
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
-                a.style.display = 'none';
                 a.href = url;
-                a.download = 'cover_3000x3000.jpg';
+                a.download = 'Cover_3000px_Premium.jpg';
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);
-                
-                statusText.innerText = "Done! Downloading...";
-                statusText.classList.add('success');
-                convertBtn.innerHTML = "Convert Another";
+
+                showToast('✨ Download Started!', 'success');
+                setTimeout(() => {
+                    setLoading(false);
+                    DOM.fill.style.width = '0%';
+                    DOM.actionBtn.querySelector('.btn-text').innerText = 'Convert Another';
+                }, 1500);
+
             } catch (error) {
                 console.error(error);
-                statusText.innerText = "Error: Conversion failed.";
-                statusText.classList.add('error');
-            } finally {
-                convertBtn.disabled = false;
+                showToast('❌ Conversion Failed', 'error');
+                setLoading(false);
+                DOM.fill.style.width = '0%';
             }
+        }
+
+        // --- Helpers ---
+        function updateStatus(title, desc) {
+            DOM.statusTitle.innerText = title.length > 20 ? title.substring(0,18)+'...' : title;
+            DOM.statusDesc.innerText = desc;
+            DOM.statusDesc.style.color = '#4ade80';
+        }
+
+        function enableButton() { DOM.actionBtn.disabled = false; DOM.actionBtn.classList.add('ready'); }
+        function disableButton() { DOM.actionBtn.disabled = true; DOM.actionBtn.classList.remove('ready'); }
+
+        function setLoading(isLoading) {
+            if(isLoading) {
+                DOM.actionBtn.disabled = true;
+                DOM.actionBtn.querySelector('.btn-text').innerText = 'Processing...';
+                DOM.progressBar.style.opacity = '1';
+            } else {
+                DOM.actionBtn.disabled = false;
+                DOM.actionBtn.querySelector('.btn-text').innerText = 'Convert Now';
+                DOM.progressBar.style.opacity = '0';
+            }
+        }
+
+        function resetAll() {
+            state.originalFile = null; state.activeFile = null;
+            DOM.dropZone.classList.remove('file-loaded');
+            DOM.fileInput.value = '';
+            updateStatus('Upload Artwork', 'Supports PNG, JPG, WebP');
+            DOM.statusDesc.style.color = 'var(--text-secondary)';
+            disableButton();
+        }
+
+        function showToast(msg, type) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.className = `toast show ${type}`;
+            navigator.vibrate(type === 'error' ? [50,50,50] : 20);
+            setTimeout(() => t.classList.remove('show'), 3000);
         }
     </script>
 </body>
