@@ -87,74 +87,78 @@
 
   <script>
     const state = {
-      mode: 'auto',
-      originalFile: null,
-      activeFile: null,
+      mode: "auto",
+      originalFile: null,   // always kept (for switching modes)
+      activeFile: null,     // always original (no client re-encode)
       cropper: null,
       cropData: null,
       isConverting: false
     };
 
     const DOM = {
-      fileInput: document.getElementById('fileInput'),
-      dropZone: document.getElementById('dropZone'),
-      actionBtn: document.getElementById('actionBtn'),
-      statusTitle: document.getElementById('statusTitle'),
-      statusDesc: document.getElementById('statusDesc'),
-      progressBar: document.getElementById('progressBar'),
-      editorModal: document.getElementById('editorModal'),
-      editorImage: document.getElementById('editorImage'),
-      glider: document.querySelector('.switch-glider'),
-      fill: document.querySelector('.fill'),
-      btnAuto: document.getElementById('btn-auto'),
-      btnManual: document.getElementById('btn-manual'),
-      toast: document.getElementById('toast')
+      fileInput: document.getElementById("fileInput"),
+      dropZone: document.getElementById("dropZone"),
+      actionBtn: document.getElementById("actionBtn"),
+      statusTitle: document.getElementById("statusTitle"),
+      statusDesc: document.getElementById("statusDesc"),
+      progressBar: document.getElementById("progressBar"),
+      editorModal: document.getElementById("editorModal"),
+      editorImage: document.getElementById("editorImage"),
+      glider: document.querySelector(".switch-glider"),
+      fill: document.querySelector(".fill"),
+      btnAuto: document.getElementById("btn-auto"),
+      btnManual: document.getElementById("btn-manual"),
+      toast: document.getElementById("toast")
     };
 
-    const ALLOWED_MIMES = new Set(['image/png', 'image/jpeg', 'image/webp']);
-    const MAX_MB = 30;
+    const ALLOWED_MIMES = new Set(["image/png","image/jpeg","image/webp"]);
+    const MAX_MB = 35;
 
     function vibrate(p){ try{ navigator.vibrate && navigator.vibrate(p);}catch(e){} }
 
-    function updateStatus(title, desc, tone='neutral'){
-      DOM.statusTitle.innerText = (title || '').length > 22 ? title.slice(0,20)+'…' : (title || '');
-      DOM.statusDesc.innerText = desc || '';
-      const map = { neutral:'var(--text-secondary)', success:'#4ade80', warn:'#fbbf24', error:'#fb7185' };
+    function updateStatus(title, desc, tone="neutral"){
+      const t = (title || "");
+      DOM.statusTitle.innerText = t.length > 22 ? t.slice(0,20)+"…" : t;
+      DOM.statusDesc.innerText = desc || "";
+      const map = { neutral:"var(--text-secondary)", success:"#4ade80", warn:"#fbbf24", error:"#fb7185" };
       DOM.statusDesc.style.color = map[tone] || map.neutral;
     }
 
-    function enableButton(label='Convert Now'){
+    function enableButton(label="Convert Now"){
       DOM.actionBtn.disabled = false;
-      DOM.actionBtn.classList.add('ready');
-      DOM.actionBtn.querySelector('.btn-text').innerText = label;
+      DOM.actionBtn.classList.add("ready");
+      DOM.actionBtn.querySelector(".btn-text").innerText = label;
     }
 
-    function disableButton(label='Convert Now'){
+    function disableButton(label="Convert Now"){
       DOM.actionBtn.disabled = true;
-      DOM.actionBtn.classList.remove('ready');
-      DOM.actionBtn.querySelector('.btn-text').innerText = label;
+      DOM.actionBtn.classList.remove("ready");
+      DOM.actionBtn.querySelector(".btn-text").innerText = label;
     }
 
-    function setLoading(on, label='Processing...'){
+    function setLoading(on, label="Processing..."){
       state.isConverting = on;
       if(on){
         DOM.actionBtn.disabled = true;
-        DOM.actionBtn.querySelector('.btn-text').innerText = label;
-        DOM.progressBar.style.opacity = '1';
+        DOM.actionBtn.querySelector(".btn-text").innerText = label;
+        DOM.progressBar.style.opacity = "1";
       } else {
-        DOM.progressBar.style.opacity = '0';
+        DOM.progressBar.style.opacity = "0";
       }
     }
 
-    function showToast(msg, type='success'){
+    function showToast(msg, type="success"){
       DOM.toast.innerText = msg;
       DOM.toast.className = `toast show ${type}`;
-      vibrate(type === 'error' ? [50,50,50] : 20);
-      setTimeout(()=>DOM.toast.classList.remove('show'), 3000);
+      vibrate(type === "error" ? [50,50,50] : 20);
+      setTimeout(()=>DOM.toast.classList.remove("show"), 2800);
     }
 
     function destroyCropper(){
-      if(state.cropper){ state.cropper.destroy(); state.cropper = null; }
+      if(state.cropper){
+        state.cropper.destroy();
+        state.cropper = null;
+      }
     }
 
     function resetAll(){
@@ -162,36 +166,36 @@
       state.originalFile = null;
       state.activeFile = null;
       state.cropData = null;
-      DOM.dropZone.classList.remove('file-loaded');
-      DOM.fileInput.value = '';
-      DOM.fill.style.width = '0%';
-      updateStatus('Upload Artwork','Supports PNG, JPG, WebP','neutral');
-      disableButton('Convert Now');
+      DOM.dropZone.classList.remove("file-loaded");
+      DOM.fileInput.value = "";
+      DOM.fill.style.width = "0%";
+      updateStatus("Upload Artwork", "Supports PNG, JPG, WebP", "neutral");
+      disableButton("Convert Now");
     }
 
+    // ✅ Auto -> Manual me file retain
     function setMode(newMode){
       if(state.mode === newMode) return;
-      vibrate(10);
       state.mode = newMode;
 
-      DOM.btnAuto.classList.toggle('active', newMode === 'auto');
-      DOM.btnManual.classList.toggle('active', newMode === 'manual');
-      DOM.glider.style.transform = `translateX(${newMode === 'auto' ? 0 : 100}%)`;
+      DOM.btnAuto.classList.toggle("active", newMode === "auto");
+      DOM.btnManual.classList.toggle("active", newMode === "manual");
+      DOM.glider.style.transform = `translateX(${newMode === "auto" ? 0 : 100}%)`;
 
       if(!state.originalFile){
-        updateStatus('Upload Artwork','Supports PNG, JPG, WebP','neutral');
-        disableButton('Convert Now');
+        updateStatus("Upload Artwork", "Supports PNG, JPG, WebP", "neutral");
+        disableButton("Convert Now");
         return;
       }
 
-      if(newMode === 'manual'){
+      if(newMode === "manual"){
         openEditor(state.originalFile);
       } else {
         closeEditor(true);
         state.cropData = null;
         state.activeFile = state.originalFile;
-        updateStatus(state.originalFile.name,'Ready to Auto-Convert','success');
-        enableButton('Convert Now');
+        updateStatus(state.originalFile.name, "Ready to Auto-Convert", "success");
+        enableButton("Convert Now");
       }
     }
     window.setMode = setMode;
@@ -199,19 +203,19 @@
     function selectFile(){ vibrate(5); DOM.fileInput.click(); }
     window.selectFile = selectFile;
 
-    DOM.fileInput.addEventListener('change', (e)=>handleFile(e.target.files?.[0]));
+    DOM.fileInput.addEventListener("change", (e)=>handleFile(e.target.files?.[0]));
 
     function handleFile(file){
       if(!file) return;
 
       if(!ALLOWED_MIMES.has(file.type)){
-        showToast('⚠️ Only PNG, JPG, WebP allowed','error');
+        showToast("⚠️ Only PNG, JPG, WebP allowed", "error");
         return;
       }
 
       const mb = file.size / (1024*1024);
       if(mb > MAX_MB){
-        showToast(`⚠️ File too large (${mb.toFixed(1)}MB). Max ${MAX_MB}MB`,'error');
+        showToast(`⚠️ File too large (${mb.toFixed(1)}MB). Max ${MAX_MB}MB`, "error");
         return;
       }
 
@@ -219,33 +223,31 @@
       state.activeFile = file;
       state.cropData = null;
 
-      vibrate(15);
-      DOM.dropZone.classList.add('file-loaded');
+      DOM.dropZone.classList.add("file-loaded");
 
-      if(state.mode === 'auto'){
-        updateStatus(file.name,'Ready to Auto-Convert','success');
-        enableButton('Convert Now');
+      if(state.mode === "auto"){
+        updateStatus(file.name, "Ready to Auto-Convert", "success");
+        enableButton("Convert Now");
       } else {
         openEditor(file);
       }
     }
 
     // Drag & Drop
-    ['dragenter','dragover'].forEach(evt=>{
+    ["dragenter","dragover"].forEach(evt=>{
       DOM.dropZone.addEventListener(evt,(e)=>{
         e.preventDefault(); e.stopPropagation();
-        DOM.dropZone.classList.add('dragging');
+        DOM.dropZone.classList.add("dragging");
       },{passive:false});
     });
-    ['dragleave','drop'].forEach(evt=>{
+    ["dragleave","drop"].forEach(evt=>{
       DOM.dropZone.addEventListener(evt,(e)=>{
         e.preventDefault(); e.stopPropagation();
-        DOM.dropZone.classList.remove('dragging');
+        DOM.dropZone.classList.remove("dragging");
       },{passive:false});
     });
-    DOM.dropZone.addEventListener('drop',(e)=>{
-      const f = e.dataTransfer?.files?.[0];
-      handleFile(f);
+    DOM.dropZone.addEventListener("drop",(e)=>{
+      handleFile(e.dataTransfer?.files?.[0]);
     });
 
     function openEditor(file){
@@ -253,14 +255,14 @@
       const reader = new FileReader();
       reader.onload = (e)=>{
         DOM.editorImage.src = e.target.result;
-        DOM.editorModal.style.visibility = 'visible';
-        DOM.editorModal.style.opacity = '1';
+        DOM.editorModal.style.visibility = "visible";
+        DOM.editorModal.style.opacity = "1";
 
         setTimeout(()=>{
           state.cropper = new Cropper(DOM.editorImage,{
             aspectRatio: 1,
             viewMode: 1,
-            dragMode: 'move',
+            dragMode: "move",
             autoCropArea: 1,
             responsive: true,
             guides: false,
@@ -269,7 +271,7 @@
             background: false,
             toggleDragModeOnDblclick: false
           });
-        },60);
+        }, 60);
       };
       reader.readAsDataURL(file);
     }
@@ -280,15 +282,15 @@
     window.editorReset = editorReset;
 
     function closeEditor(keepFile=false){
-      DOM.editorModal.style.opacity = '0';
-      setTimeout(()=>{ DOM.editorModal.style.visibility = 'hidden'; }, 250);
+      DOM.editorModal.style.opacity = "0";
+      setTimeout(()=>{ DOM.editorModal.style.visibility = "hidden"; }, 250);
       destroyCropper();
 
-      if(!keepFile && state.mode === 'manual'){
+      if(!keepFile && state.mode === "manual"){
         if(state.originalFile){
           state.activeFile = state.originalFile;
-          updateStatus(state.originalFile.name,'Using Original Image','warn');
-          enableButton('Convert Now');
+          updateStatus(state.originalFile.name, "Using Original Image", "warn");
+          enableButton("Convert Now");
         } else {
           resetAll();
         }
@@ -296,7 +298,7 @@
     }
     window.closeEditor = closeEditor;
 
-    // ✅ IMPORTANT: No client crop export. Only send crop coordinates (HQ, fast)
+    // ✅ HQ manual crop: only store crop coords (no PNG canvas export)
     function saveCrop(){
       if(!state.cropper) return;
       vibrate(20);
@@ -309,72 +311,101 @@
         h: Math.max(1, Math.round(d.height))
       };
 
-      state.activeFile = state.originalFile; // keep original
+      state.activeFile = state.originalFile;
       closeEditor(true);
-      updateStatus('Manual Crop Saved','Ready to Convert (HQ)','success');
-      enableButton('Convert Now');
+      updateStatus("Manual Crop Saved", "Ready to Convert (MAX HQ)", "success");
+      enableButton("Convert Now");
     }
     window.saveCrop = saveCrop;
 
+    // ✅ Fail-to-fetch safe convert
     async function executeConvert(){
-      const label = DOM.actionBtn.querySelector('.btn-text').innerText.toLowerCase();
-      if(label.includes('another')){ resetAll(); return; }
-
       if(!state.activeFile || state.isConverting) return;
 
-      setLoading(true);
-      DOM.fill.style.width = '15%';
+      setLoading(true, "Processing...");
+      DOM.fill.style.width = "10%";
 
       const formData = new FormData();
-      formData.append('file', state.activeFile, state.activeFile.name || 'image.png');
-      formData.append('mode', state.mode);
-
-      if(state.mode === 'manual' && state.cropData){
-        formData.append('crop', JSON.stringify(state.cropData));
+      formData.append("file", state.activeFile, state.activeFile.name || "image.jpg");
+      formData.append("mode", state.mode);
+      if(state.mode === "manual" && state.cropData){
+        formData.append("crop", JSON.stringify(state.cropData));
       }
 
+      const controller = new AbortController();
+      const timeout = setTimeout(()=>controller.abort(), 60000);
+
       try{
-        DOM.fill.style.width = '55%';
-        const res = await fetch('/convert', { method:'POST', body: formData });
+        DOM.fill.style.width = "45%";
+
+        const res = await fetch("/convert", {
+          method: "POST",
+          body: formData,
+          credentials: "same-origin",
+          cache: "no-store",
+          signal: controller.signal
+        });
+
         if(!res.ok){
-          const err = await res.json().catch(()=>null);
-          throw new Error(err?.error || 'Server error');
+          let msg = "Server error";
+          try { msg = (await res.json()).error || msg; } catch(_){}
+          throw new Error(msg);
         }
 
-        DOM.fill.style.width = '90%';
+        DOM.fill.style.width = "85%";
         const blob = await res.blob();
+        if(!blob.type.includes("jpeg")){
+          throw new Error("Invalid response (not JPEG).");
+        }
 
-        // Download (always image/jpeg)
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const a = document.createElement("a");
         a.href = url;
-        a.download = 'Cover_3000px_Premium.jpg';
+        a.download = "Cover_3000px_Premium.jpg";
         document.body.appendChild(a);
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
 
-        DOM.fill.style.width = '100%';
-        showToast('✨ Download Started!','success');
+        DOM.fill.style.width = "100%";
+        showToast("✨ Download Started!", "success");
 
         setTimeout(()=>{
           setLoading(false);
-          DOM.fill.style.width = '0%';
-          enableButton('Convert Another');
-        }, 800);
+          DOM.fill.style.width = "0%";
+          enableButton("Convert Now");
+        }, 600);
 
       } catch(e){
-        console.error(e);
-        showToast('❌ ' + e.message,'error');
+        const isAbort = e.name === "AbortError";
+        showToast(isAbort ? "❌ Timeout / Slow network" : ("❌ " + e.message), "error");
         setLoading(false);
-        DOM.fill.style.width = '0%';
-        if(state.activeFile) enableButton('Convert Now');
+        DOM.fill.style.width = "0%";
+        if(state.activeFile) enableButton("Convert Now");
+      } finally {
+        clearTimeout(timeout);
       }
     }
     window.executeConvert = executeConvert;
 
-    updateStatus('Upload Artwork','Supports PNG, JPG, WebP','neutral');
-    disableButton('Convert Now');
+    // ✅ Pull-to-refresh (pull down to reset)
+    let startY = 0, pulling = false;
+    window.addEventListener("touchstart", (e)=>{
+      if(window.scrollY === 0) startY = e.touches[0].clientY;
+    }, {passive:true});
+
+    window.addEventListener("touchmove", (e)=>{
+      const y = e.touches[0].clientY;
+      if(window.scrollY === 0 && (y - startY) > 90 && !pulling){
+        pulling = true;
+        showToast("↻ Refreshed", "success");
+        resetAll();
+        setTimeout(()=> pulling = false, 500);
+      }
+    }, {passive:true});
+
+    updateStatus("Upload Artwork", "Supports PNG, JPG, WebP", "neutral");
+    disableButton("Convert Now");
   </script>
 </body>
 </html>
