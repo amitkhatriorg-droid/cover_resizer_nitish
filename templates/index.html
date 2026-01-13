@@ -2,158 +2,144 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>RouteNote Cover Art Converter</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cover Converter • RouteNote 3000×3000</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
-  <!-- Cropper.js CSS -->
+  <!-- Cropper.js -->
   <link rel="stylesheet" href="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css">
 </head>
 <body>
 
-  <!-- Top Bar / Menu -->
   <header class="topbar">
-    <div class="topbar-inner">
+    <div class="wrap topbar-inner">
       <div class="brand">
-        <div class="logo-dot"></div>
-        <div class="brand-text">
+        <span class="logo"></span>
+        <div>
           <div class="brand-title">Cover Converter</div>
-          <div class="brand-sub">RouteNote 3000×3000 • High Quality</div>
+          <div class="brand-sub">RouteNote • 3000×3000 • High Quality</div>
         </div>
       </div>
-
-      <nav class="nav">
-        <a class="nav-link" href="#" onclick="return false;">Home</a>
-        <a class="nav-link" href="#" onclick="document.getElementById('help').scrollIntoView({behavior:'smooth'}); return false;">Help</a>
-      </nav>
+      <a class="chip" href="#" onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'});return false;">How it works</a>
     </div>
   </header>
 
-  <main class="page">
+  <main class="wrap">
     <section class="hero">
-      <h1>RouteNote Cover Art Converter</h1>
-      <p>Manual crop adjust (drag & zoom) or Auto center-crop. Output always <strong>3000×3000</strong> JPEG with best-quality resizing on server.</p>
+      <h1>Make perfect cover art in seconds</h1>
+      <p>Choose <strong>Auto</strong> (center crop) or <strong>Manual</strong> (easy full-screen crop on mobile). Output is always a high-quality <strong>3000×3000 JPEG</strong>.</p>
     </section>
 
-    <section class="card">
-      <div class="row row-gap">
-        <div>
+    <section class="panel">
+      <div class="row">
+        <div class="col">
           <div class="label">Mode</div>
           <div class="seg" role="tablist" aria-label="Mode">
-            <button id="modeAuto" class="seg-btn is-active" type="button">Auto</button>
-            <button id="modeManual" class="seg-btn" type="button">Manual</button>
+            <button id="btnModeAuto" class="seg-btn is-on" type="button">Auto</button>
+            <button id="btnModeManual" class="seg-btn" type="button">Manual</button>
           </div>
-          <div class="hint">Auto = center crop. Manual = adjust crop box yourself.</div>
+          <div class="sub">Manual mode opens a full-screen crop screen with big controls.</div>
         </div>
 
-        <div class="right">
+        <div class="col">
           <div class="label">Upload</div>
-          <label class="file">
-            <input id="fileInput" type="file" accept="image/*">
-            <span id="fileName" class="file-name">Choose an image…</span>
-            <span class="file-btn">Browse</span>
+          <label class="filebox" for="fileInput">
+            <span id="fileText" class="filetext">Tap to choose an image…</span>
+            <span class="filebtn">Browse</span>
           </label>
-          <div class="hint">Best results: upload a large image.</div>
+          <input id="fileInput" type="file" accept="image/*" />
+          <div class="sub">Best results: use artwork larger than 3000×3000.</div>
         </div>
       </div>
 
-      <!-- Manual Crop Panel -->
-      <div id="manualPanel" class="manual-panel" style="display:none;">
-        <div class="panel-head">
-          <div>
-            <div class="panel-title">Manual Crop</div>
-            <div class="panel-sub">Drag to move • Scroll/pinch to zoom • Keep framing inside the square</div>
-          </div>
-          <button id="btnReset" class="btn btn-ghost" type="button" disabled>Reset</button>
-        </div>
-
-        <div class="crop-frame">
-          <img id="preview" alt="preview" style="display:none; max-width:100%;">
-        </div>
-      </div>
-
-      <!-- Actions -->
-      <div class="actions">
+      <div class="actionbar">
         <button id="btnConvert" class="btn btn-primary" type="button" disabled>Convert & Download</button>
         <div id="status" class="status" aria-live="polite"></div>
       </div>
-
-      <div class="note">
-        <div class="note-title">Quality note</div>
-        <ul>
-          <li>Browser side: only cropping (no 3000 resize).</li>
-          <li>Server side: 3000×3000 resize using <strong>LANCZOS</strong> (best quality).</li>
-          <li>JPEG exported in high quality.</li>
-        </ul>
-      </div>
     </section>
 
-    <section id="help" class="help">
-      <h2>Quick Help</h2>
-      <div class="help-grid">
-        <div class="help-card">
-          <div class="help-title">Auto Mode</div>
-          <div class="help-text">Upload → Convert. Center crop automatically.</div>
-        </div>
-        <div class="help-card">
-          <div class="help-title">Manual Mode</div>
-          <div class="help-text">Upload → Adjust crop square → Convert.</div>
-        </div>
-        <div class="help-card">
-          <div class="help-title">If image looks blurry</div>
-          <div class="help-text">Upload a higher-resolution artwork (bigger than 3000×3000).</div>
-        </div>
-      </div>
+    <section id="how" class="info">
+      <h2>Quality-focused workflow</h2>
+      <ul>
+        <li><strong>Auto:</strong> upload → server center-crops + resizes with LANCZOS.</li>
+        <li><strong>Manual:</strong> you crop (no resize in browser) → server resizes with LANCZOS.</li>
+        <li>Export: high-quality JPEG download.</li>
+      </ul>
     </section>
 
-    <footer class="footer">
-      © 2026 Cover Converter
-    </footer>
+    <footer class="foot">© 2026 Cover Converter</footer>
   </main>
 
-  <!-- Cropper.js -->
+  <!-- Full-screen Crop Modal (Mobile Friendly) -->
+  <div id="cropModal" class="modal" aria-hidden="true">
+    <div class="modal-top">
+      <button id="btnCloseCrop" class="iconbtn" type="button" aria-label="Close">✕</button>
+      <div class="modal-title">
+        <div class="t1">Adjust Crop</div>
+        <div class="t2">Drag to move • Pinch to zoom • Use buttons if needed</div>
+      </div>
+      <button id="btnDoneCrop" class="iconbtn primary" type="button">Done</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="crop-stage">
+        <img id="cropImage" alt="Crop preview" />
+      </div>
+    </div>
+
+    <div class="modal-bottom">
+      <button id="btnZoomOut" class="btn btn-soft" type="button">Zoom −</button>
+      <button id="btnZoomIn" class="btn btn-soft" type="button">Zoom +</button>
+      <button id="btnReset" class="btn btn-soft" type="button">Reset</button>
+    </div>
+  </div>
+
   <script src="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.js"></script>
 
   <script>
-    const fileInput = document.getElementById('fileInput');
-    const fileName = document.getElementById('fileName');
+    const fileInput   = document.getElementById('fileInput');
+    const fileText    = document.getElementById('fileText');
+    const statusEl    = document.getElementById('status');
+    const btnConvert  = document.getElementById('btnConvert');
 
-    const modeAutoBtn = document.getElementById('modeAuto');
-    const modeManualBtn = document.getElementById('modeManual');
+    const btnModeAuto   = document.getElementById('btnModeAuto');
+    const btnModeManual = document.getElementById('btnModeManual');
 
-    const manualPanel = document.getElementById('manualPanel');
-    const preview = document.getElementById('preview');
+    // Modal elements
+    const cropModal   = document.getElementById('cropModal');
+    const cropImage   = document.getElementById('cropImage');
+    const btnCloseCrop = document.getElementById('btnCloseCrop');
+    const btnDoneCrop  = document.getElementById('btnDoneCrop');
 
-    const btnReset = document.getElementById('btnReset');
-    const btnConvert = document.getElementById('btnConvert');
-    const statusEl = document.getElementById('status');
+    const btnZoomIn  = document.getElementById('btnZoomIn');
+    const btnZoomOut = document.getElementById('btnZoomOut');
+    const btnReset   = document.getElementById('btnReset');
 
-    let mode = 'auto';            // 'auto' | 'manual'
-    let cropper = null;
+    let mode = 'auto';
     let selectedFile = null;
+    let cropper = null;
+    let manualBlob = null; // cropped (PNG) blob from manual mode
 
-    function setMode(nextMode) {
-      mode = nextMode;
-
-      modeAutoBtn.classList.toggle('is-active', mode === 'auto');
-      modeManualBtn.classList.toggle('is-active', mode === 'manual');
-
-      if (!selectedFile) {
-        manualPanel.style.display = (mode === 'manual') ? 'block' : 'none';
-        return;
-      }
-
-      if (mode === 'manual') {
-        manualPanel.style.display = 'block';
-        initCropperFromFile(selectedFile);
-      } else {
-        manualPanel.style.display = 'none';
-        destroyCropper();
-      }
-
+    function setMode(next) {
+      mode = next;
+      btnModeAuto.classList.toggle('is-on', mode === 'auto');
+      btnModeManual.classList.toggle('is-on', mode === 'manual');
+      manualBlob = null;
       statusEl.textContent = '';
+    }
+
+    function openModal() {
+      cropModal.classList.add('open');
+      cropModal.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('noscroll');
+    }
+
+    function closeModal() {
+      cropModal.classList.remove('open');
+      cropModal.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('noscroll');
     }
 
     function destroyCropper() {
@@ -161,68 +147,35 @@
         cropper.destroy();
         cropper = null;
       }
-      preview.style.display = 'none';
-      btnReset.disabled = true;
     }
 
-    function initCropperFromFile(file) {
+    function initCropper(file) {
       const url = URL.createObjectURL(file);
-      preview.src = url;
-      preview.style.display = 'block';
+      cropImage.src = url;
 
-      preview.onload = () => {
+      cropImage.onload = () => {
         destroyCropper();
-        cropper = new Cropper(preview, {
+        cropper = new Cropper(cropImage, {
           aspectRatio: 1,
           viewMode: 1,
           autoCropArea: 1,
           background: false,
-          guides: true,
-          center: true,
+          responsive: true,
           movable: true,
           zoomable: true,
-          rotatable: false,
-          scalable: false,
-          responsive: true
+          guides: false,
+          center: true,
+          highlight: false,
+          toggleDragModeOnDblclick: false
         });
-        btnReset.disabled = false;
       };
     }
-
-    modeAutoBtn.addEventListener('click', () => setMode('auto'));
-    modeManualBtn.addEventListener('click', () => setMode('manual'));
-
-    fileInput.addEventListener('change', () => {
-      const file = fileInput.files && fileInput.files[0];
-      if (!file) return;
-
-      selectedFile = file;
-      fileName.textContent = file.name || 'Selected image';
-      btnConvert.disabled = false;
-      statusEl.textContent = '';
-
-      if (mode === 'manual') {
-        manualPanel.style.display = 'block';
-        initCropperFromFile(file);
-      } else {
-        manualPanel.style.display = 'none';
-        destroyCropper();
-      }
-    });
-
-    btnReset.addEventListener('click', () => {
-      if (cropper) cropper.reset();
-    });
 
     async function postAndDownload(blobOrFile, filename) {
       const formData = new FormData();
       formData.append('cover', blobOrFile, filename);
 
-      const resp = await fetch('{{ url_for("convert") }}', {
-        method: 'POST',
-        body: formData
-      });
-
+      const resp = await fetch('{{ url_for("convert") }}', { method: 'POST', body: formData });
       if (!resp.ok) throw new Error('Server error: ' + resp.status);
 
       const outBlob = await resp.blob();
@@ -238,6 +191,48 @@
       URL.revokeObjectURL(outUrl);
     }
 
+    // Mode buttons
+    btnModeAuto.addEventListener('click', () => setMode('auto'));
+    btnModeManual.addEventListener('click', () => setMode('manual'));
+
+    // File selection
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+
+      selectedFile = file;
+      fileText.textContent = file.name || 'Selected image';
+      btnConvert.disabled = false;
+      statusEl.textContent = '';
+      manualBlob = null;
+
+      if (mode === 'manual') {
+        openModal();
+        initCropper(file);
+      }
+    });
+
+    // Modal controls
+    btnCloseCrop.addEventListener('click', () => {
+      closeModal();
+    });
+
+    btnZoomIn.addEventListener('click', () => { if (cropper) cropper.zoom(0.08); });
+    btnZoomOut.addEventListener('click', () => { if (cropper) cropper.zoom(-0.08); });
+    btnReset.addEventListener('click', () => { if (cropper) cropper.reset(); });
+
+    btnDoneCrop.addEventListener('click', () => {
+      if (!cropper) return;
+
+      // IMPORTANT: only crop here (no 3000 resize in browser)
+      cropper.getCroppedCanvas().toBlob((blob) => {
+        manualBlob = blob; // store for convert
+        closeModal();
+        statusEl.textContent = 'Crop saved ✅ Now tap Convert & Download.';
+      }, 'image/png');
+    });
+
+    // Convert
     btnConvert.addEventListener('click', async () => {
       if (!selectedFile) return;
 
@@ -246,34 +241,27 @@
 
       try {
         if (mode === 'auto') {
-          // Auto: send original file; server does center-crop + LANCZOS resize
           await postAndDownload(selectedFile, selectedFile.name || 'cover.png');
-          statusEl.textContent = 'Done ✅ Download started.';
         } else {
-          // Manual: crop only (no client resize) then send to server for LANCZOS resize
-          if (!cropper) throw new Error('Cropper not ready. Try again.');
-
-          cropper.getCroppedCanvas().toBlob(async (blob) => {
-            try {
-              await postAndDownload(blob, 'cropped.png');
-              statusEl.textContent = 'Done ✅ Download started.';
-            } catch (e) {
-              statusEl.textContent = 'Error: ' + e.message;
-            } finally {
-              btnConvert.disabled = false;
-            }
-          }, 'image/png');
-
-          return; // because toBlob is async callback
+          // If user didn’t press Done, open modal to confirm crop
+          if (!manualBlob) {
+            openModal();
+            initCropper(selectedFile);
+            statusEl.textContent = 'Adjust crop and tap Done.';
+            btnConvert.disabled = false;
+            return;
+          }
+          await postAndDownload(manualBlob, 'cropped.png');
         }
+
+        statusEl.textContent = 'Done ✅ Download started.';
       } catch (e) {
         statusEl.textContent = 'Error: ' + e.message;
       } finally {
-        if (mode === 'auto') btnConvert.disabled = false;
+        btnConvert.disabled = false;
       }
     });
 
-    // default mode
     setMode('auto');
   </script>
 </body>
