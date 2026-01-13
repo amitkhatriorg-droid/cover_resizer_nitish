@@ -1,13 +1,17 @@
 *{box-sizing:border-box;margin:0;padding:0}
+
 body{
   font-family:'Poppins',sans-serif;
   min-height:100vh;
   color:#fff;
   background:linear-gradient(135deg,#8EC5FC 0%,#E0C3FC 50%,#96E6A1 100%);
 }
+
 .container{max-width:900px;margin:0 auto;padding:24px}
+
 header h1{font-size:2rem;font-weight:600;line-height:1.2}
 .tagline{margin-top:8px;opacity:.92}
+
 .card{
   margin-top:18px;
   background:rgba(0,0,0,.58);
@@ -16,17 +20,54 @@ header h1{font-size:2rem;font-weight:600;line-height:1.2}
   box-shadow:0 16px 40px rgba(0,0,0,.18);
   backdrop-filter:blur(8px);
 }
+
 .card h2{font-size:1.4rem;font-weight:600;margin-bottom:10px}
-.muted{opacity:.9;line-height:1.6;margin-bottom:16px}
-.file input[type="file"]{
+
+.muted{opacity:.9;line-height:1.6;margin-bottom:12px}
+
+input[type="file"]{
   width:100%;
   padding:12px;
   border-radius:10px;
   border:none;
   background:#fff;
   color:#333;
-  margin-bottom:16px;
+  margin-bottom:12px;
 }
+
+/* Auto / Manual mode toggle pills */
+.mode-row{
+  margin: 10px 0 14px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.radio{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background: rgba(255,255,255,0.10);
+  padding: 10px 12px;
+  border-radius: 999px;
+}
+.radio input{ transform: scale(1.1); }
+
+/* Manual crop area */
+.crop-wrap{
+  margin-top: 10px;
+  background: rgba(255,255,255,0.08);
+  padding: 10px;
+  border-radius: 12px;
+}
+
+/* Buttons row */
+.btn-row{
+  margin-top: 14px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 button{
   border:none;
   border-radius:999px;
@@ -37,9 +78,19 @@ button{
   background:#ff758c;
   color:#fff;
   transition:transform .08s ease, filter .2s ease;
+  flex: 1;
+  min-width: 160px;
 }
+
 button:hover{filter:brightness(1.05)}
 button:active{transform:scale(.98)}
+
+button:disabled{
+  opacity:.6;
+  cursor:not-allowed;
+}
+
+/* Tips & footer */
 .tips{
   margin-top:14px;
   display:grid;
@@ -47,4 +98,5 @@ button:active{transform:scale(.98)}
   opacity:.95;
   font-size:.95rem;
 }
+
 .footer{opacity:.85;margin-top:10px}
