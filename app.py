@@ -5,58 +5,65 @@ import json
 
 app = Flask(__name__)
 
+# Prevent big uploads from failing (common cause of "Fail to fetch")
+app.config["MAX_CONTENT_LENGTH"] = 40 * 1024 * 1024  # 40MB
+
 TARGET = 3000
 
-def process_image_to_3000_jpeg(file_storage, crop=None):
-    data = file_storage.read()
-    if not data:
+def _to_rgb_clean(im: Image.Image) -> Image.Image:
+    # Fix EXIF orientation (then we re-encode => metadata effectively gone)
+    im = ImageOps.exif_transpose(im)
+
+    # Convert to RGB (handle alpha)
+    if im.mode in ("RGBA", "LA"):
+        bg = Image.new("RGB", im.size, (0, 0, 0))
+        bg.paste(im, mask=im.split()[-1])
+        im = bg
+    elif im.mode != "RGB":
+        im = im.convert("RGB")
+    return im
+
+def _clamp_crop(im: Image.Image, crop: dict):
+    x = int(crop.get("x", 0))
+    y = int(crop.get("y", 0))
+    w = int(crop.get("w", im.width))
+    h = int(crop.get("h", im.height))
+
+    x = max(0, min(x, im.width - 1))
+    y = max(0, min(y, im.height - 1))
+
+    x2 = max(x + 1, min(x + w, im.width))
+    y2 = max(y + 1, min(y + h, im.height))
+    return (x, y, x2, y2)
+
+def process_to_3000_jpeg(file_storage, crop=None) -> BytesIO:
+    raw = file_storage.read()
+    if not raw:
         raise ValueError("Empty upload")
 
-    bio = BytesIO(data)
-    bio.seek(0)
+    with Image.open(BytesIO(raw)) as im:
+        im = _to_rgb_clean(im)
 
-    with Image.open(bio) as im:
-        # Fix orientation using EXIF and then strip metadata by re-encoding clean
-        im = ImageOps.exif_transpose(im)
-
-        # Convert to RGB (handle alpha images)
-        if im.mode in ("RGBA", "LA"):
-            bg = Image.new("RGB", im.size, (0, 0, 0))
-            bg.paste(im, mask=im.split()[-1])
-            im = bg
-        elif im.mode != "RGB":
-            im = im.convert("RGB")
-
-        # Manual crop (natural pixel coords)
         if crop:
-            x = int(crop.get("x", 0))
-            y = int(crop.get("y", 0))
-            w = int(crop.get("w", im.width))
-            h = int(crop.get("h", im.height))
+            im = im.crop(_clamp_crop(im, crop))
 
-            x = max(0, min(x, im.width - 1))
-            y = max(0, min(y, im.height - 1))
-            x2 = max(x + 1, min(x + w, im.width))
-            y2 = max(y + 1, min(y + h, im.height))
-            im = im.crop((x, y, x2, y2))
-
-        # Premium square output without distortion (center fit/crop)
+        # Premium: square center-crop + LANCZOS resize
         im = ImageOps.fit(
             im,
             (TARGET, TARGET),
             method=Image.Resampling.LANCZOS,
-            centering=(0.5, 0.5)
+            centering=(0.5, 0.5),
         )
 
         out = BytesIO()
-        # Metadata stripped: don't pass exif/info
+        # MAX QUALITY JPEG (very high, still optimized)
         im.save(
             out,
             format="JPEG",
-            quality=95,       # sweet spot = near-lossless look, smaller & faster
+            quality=98,          # higher than 95 (more detail)
             optimize=True,
             progressive=True,
-            subsampling=0     # 4:4:4 chroma = best quality
+            subsampling=0        # 4:4:4 chroma (best)
         )
         out.seek(0)
         return out
@@ -79,17 +86,12 @@ def convert():
         if crop_raw:
             try:
                 c = json.loads(crop_raw)
-                crop = {
-                    "x": int(c["x"]),
-                    "y": int(c["y"]),
-                    "w": int(c["w"]),
-                    "h": int(c["h"])
-                }
+                crop = {"x": int(c["x"]), "y": int(c["y"]), "w": int(c["w"]), "h": int(c["h"])}
             except Exception:
                 return jsonify({"error": "Invalid crop data"}), 400
 
     try:
-        out = process_image_to_3000_jpeg(f, crop=crop)
+        out = process_to_3000_jpeg(f, crop=crop)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
