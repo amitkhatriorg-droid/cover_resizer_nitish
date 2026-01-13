@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>RouteNote Cover Art Converter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="container">
+    <h1>RouteNote Cover Art Converter</h1>
+    <p class="tagline">Convert any image to a perfect <strong>3000×3000</strong> JPEG (center-crop + resize)</p>
+  </header>
+
+  <main class="container">
+    <div class="card">
+      <h2>Upload your artwork</h2>
+      <p class="muted">
+        Upload JPEG/PNG/WebP. Output will download automatically as a JPEG sized 3000×3000.
+      </p>
+
+      <form action="{{ url_for('convert') }}" method="post" enctype="multipart/form-data">
+        <label class="file">
+          <input type="file" name="cover" accept="image/*" required>
+        </label>
+
+        <button type="submit">Convert &amp; Download</button>
+      </form>
+
+      <div class="tips">
+        <div><strong>Tip:</strong> For best quality, upload a large image.</div>
+        <div><strong>Note:</strong> The image is center-cropped to square (no distortion).</div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="container footer">
+    <small>© 2026 Cover Converter</small>
+  </footer>
+</body>
+</html>
