@@ -4,33 +4,53 @@
   <meta charset="UTF-8" />
   <title>RouteNote Cover Art Converter</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+  <!-- Cropper.js CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css">
 </head>
 <body>
   <header class="container">
     <h1>RouteNote Cover Art Converter</h1>
-    <p class="tagline">Convert any image to a perfect <strong>3000×3000</strong> JPEG (center-crop + resize)</p>
+    <p class="tagline">Auto center-crop OR Manual crop adjust + high-quality <strong>3000×3000</strong> JPEG</p>
   </header>
 
   <main class="container">
     <div class="card">
-      <h2>Upload your artwork</h2>
-      <p class="muted">
-        Upload JPEG/PNG/WebP. Output will download automatically as a JPEG sized 3000×3000.
-      </p>
+      <h2>Upload Artwork</h2>
+      <p class="muted">Mode चुनो: Auto में quick convert, Manual में crop box drag करके framing set कर सकते हो.</p>
 
-      <form action="{{ url_for('convert') }}" method="post" enctype="multipart/form-data">
-        <label class="file">
-          <input type="file" name="cover" accept="image/*" required>
+      <!-- Mode toggle -->
+      <div class="mode-row">
+        <label class="radio">
+          <input type="radio" name="mode" value="auto" checked>
+          <span>Auto (Center Crop)</span>
         </label>
+        <label class="radio">
+          <input type="radio" name="mode" value="manual">
+          <span>Manual (Adjust Crop)</span>
+        </label>
+      </div>
 
-        <button type="submit">Convert &amp; Download</button>
-      </form>
+      <input id="fileInput" type="file" accept="image/*" />
+
+      <!-- Manual crop area (only visible in manual mode) -->
+      <div id="manualArea" class="crop-wrap" style="display:none;">
+        <img id="preview" alt="preview" style="max-width:100%; display:none;" />
+      </div>
+
+      <div class="btn-row">
+        <button id="btnReset" type="button" disabled>Reset Crop</button>
+        <button id="btnConvert" type="button" disabled>Convert &amp; Download</button>
+      </div>
+
+      <div id="status" class="muted" style="margin-top:12px;"></div>
 
       <div class="tips">
-        <div><strong>Tip:</strong> For best quality, upload a large image.</div>
-        <div><strong>Note:</strong> The image is center-cropped to square (no distortion).</div>
+        <div><strong>Quality:</strong> Resize server पर LANCZOS से होगा (best).</div>
+        <div><strong>Manual:</strong> Crop box move/zoom करके exact framing set करो.</div>
       </div>
     </div>
   </main>
@@ -38,5 +58,162 @@
   <footer class="container footer">
     <small>© 2026 Cover Converter</small>
   </footer>
+
+  <!-- Cropper.js -->
+  <script src="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.js"></script>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const preview = document.getElementById('preview');
+    const manualArea = document.getElementById('manualArea');
+
+    const btnConvert = document.getElementById('btnConvert');
+    const btnReset = document.getElementById('btnReset');
+    const statusEl = document.getElementById('status');
+
+    let cropper = null;
+    let selectedFile = null;
+
+    function getMode() {
+      const checked = document.querySelector('input[name="mode"]:checked');
+      return checked ? checked.value : 'auto';
+    }
+
+    function destroyCropper() {
+      if (cropper) {
+        cropper.destroy();
+        cropper = null;
+      }
+    }
+
+    function setManualUI(enabled) {
+      manualArea.style.display = enabled ? 'block' : 'none';
+      preview.style.display = enabled ? 'block' : 'none';
+      btnReset.disabled = !enabled;
+      if (!enabled) destroyCropper();
+    }
+
+    // mode change
+    document.querySelectorAll('input[name="mode"]').forEach(r => {
+      r.addEventListener('change', () => {
+        const mode = getMode();
+        if (!selectedFile) {
+          setManualUI(mode === 'manual');
+          return;
+        }
+        if (mode === 'manual') {
+          // init cropper on current image
+          setManualUI(true);
+          initCropperFromFile(selectedFile);
+        } else {
+          // auto mode: hide manual UI
+          setManualUI(false);
+        }
+        statusEl.textContent = '';
+      });
+    });
+
+    function initCropperFromFile(file) {
+      const url = URL.createObjectURL(file);
+      preview.src = url;
+
+      // wait for image load before cropper init
+      preview.onload = () => {
+        destroyCropper();
+        cropper = new Cropper(preview, {
+          aspectRatio: 1,
+          viewMode: 1,
+          autoCropArea: 1,
+          movable: true,
+          zoomable: true,
+          rotatable: false,
+          scalable: false,
+        });
+      };
+    }
+
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+
+      selectedFile = file;
+      btnConvert.disabled = false;
+      statusEl.textContent = '';
+
+      const mode = getMode();
+      if (mode === 'manual') {
+        setManualUI(true);
+        initCropperFromFile(file);
+      } else {
+        setManualUI(false);
+      }
+    });
+
+    btnReset.addEventListener('click', () => {
+      if (cropper) cropper.reset();
+    });
+
+    async function postAndDownload(blob, downloadName) {
+      const formData = new FormData();
+      formData.append('cover', blob, downloadName);
+
+      const resp = await fetch('{{ url_for("convert") }}', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!resp.ok) throw new Error('Server error: ' + resp.status);
+
+      const outBlob = await resp.blob();
+      const outUrl = URL.createObjectURL(outBlob);
+
+      const a = document.createElement('a');
+      a.href = outUrl;
+      a.download = 'routenote_3000x3000.jpg';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(outUrl);
+    }
+
+    btnConvert.addEventListener('click', async () => {
+      if (!selectedFile) return;
+
+      btnConvert.disabled = true;
+      statusEl.textContent = 'Processing...';
+
+      try {
+        const mode = getMode();
+
+        if (mode === 'auto') {
+          // send original file; server will center-crop + resize
+          await postAndDownload(selectedFile, selectedFile.name || 'cover.png');
+        } else {
+          // manual: crop only (no client resize) then send
+          if (!cropper) throw new Error('Cropper not ready yet. Try again.');
+
+          cropper.getCroppedCanvas().toBlob(async (blob) => {
+            try {
+              await postAndDownload(blob, 'cropped.png');
+              statusEl.textContent = 'Done ✅ Download started.';
+            } catch (e) {
+              statusEl.textContent = 'Error: ' + e.message;
+            } finally {
+              btnConvert.disabled = false;
+            }
+          }, 'image/png');
+
+          return; // exit early because toBlob is async callback
+        }
+
+        statusEl.textContent = 'Done ✅ Download started.';
+      } catch (e) {
+        statusEl.textContent = 'Error: ' + e.message;
+      } finally {
+        // in manual mode, button is re-enabled inside callback
+        if (getMode() === 'auto') btnConvert.disabled = false;
+      }
+    });
+  </script>
 </body>
 </html>
