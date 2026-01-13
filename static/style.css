@@ -46,7 +46,7 @@ body {
   z-index: -1; pointer-events: none;
 }
 
-/* Container */
+/* App */
 .app-core { width: 100%; max-width: 440px; padding: 20px; z-index: 10; }
 
 .glass-panel {
@@ -94,7 +94,7 @@ body {
   z-index: 1; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
-/* Drop Zone */
+/* Dropzone */
 .drop-zone {
   height: 180px; border-radius: var(--radius-md);
   border: 2px dashed rgba(255,255,255,0.1);
@@ -105,13 +105,7 @@ body {
 }
 .drop-zone:active { transform: scale(0.98); background: rgba(255,255,255,0.04); }
 .drop-zone.file-loaded { border-style: solid; border-color: var(--success); background: rgba(0, 255, 157, 0.05); }
-
-/* ✅ Dragging state */
-.drop-zone.dragging {
-  border-color: rgba(107, 76, 255, 0.7);
-  background: rgba(107, 76, 255, 0.08);
-  transform: scale(0.99);
-}
+.drop-zone.dragging { border-color: rgba(107,76,255,0.7); background: rgba(107,76,255,0.08); transform: scale(0.99); }
 
 .zone-content { text-align: center; }
 .upload-icon-anim { color: var(--text-secondary); margin-bottom: 12px; transition: 0.3s; }
@@ -137,7 +131,7 @@ p { font-size: 0.85rem; color: var(--text-secondary); transition: color 0.3s; }
   transition: all 0.3s var(--ease-elastic);
   opacity: 0.5; pointer-events: none;
 }
-.hero-btn.ready { opacity: 1; pointer-events: auto; box-shadow: 0 10px 30px -5px rgba(255, 255, 255, 0.3); }
+.hero-btn.ready { opacity: 1; pointer-events: auto; box-shadow: 0 10px 30px -5px rgba(255,255,255,0.3); }
 .hero-btn:active { transform: scale(0.96); }
 
 /* Editor */
@@ -147,7 +141,6 @@ p { font-size: 0.85rem; color: var(--text-secondary); transition: color 0.3s; }
   visibility: hidden; opacity: 0; transition: opacity 0.3s ease;
 }
 .editor-layer, .canvas-area { touch-action: none; }
-
 .canvas-area { flex: 1; position: relative; overflow: hidden; background: #080808; }
 
 .toolbar-glass {
@@ -181,11 +174,11 @@ p { font-size: 0.85rem; color: var(--text-secondary); transition: color 0.3s; }
 .toast.error { background: var(--danger); color: white; }
 .toast.success { background: var(--success); color: black; }
 
-/* Cropper Override */
-.cropper-view-box { outline: 2px solid white; border-radius: 0; }
+/* Cropper overrides */
+.cropper-view-box { outline: 2px solid #fff !important; border-radius: 0 !important; }
 .cropper-modal { background-color: #000; opacity: 0.85; }
 
-/* ✅ BIG crop handles (fix your tiny dots issue) */
+/* ✅ BIG handles (fix tiny dots) */
 .cropper-point {
   width: 18px !important;
   height: 18px !important;
