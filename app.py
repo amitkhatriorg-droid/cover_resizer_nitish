@@ -1,67 +1,105 @@
-from flask import Flask, render_template, request, send_file, redirect, url_for
-from pathlib import Path
-from PIL import Image
-import io
+from flask import Flask, request, send_file, jsonify, render_template
+from PIL import Image, ImageOps
+from io import BytesIO
+import json
 
 app = Flask(__name__)
 
+TARGET = 3000
 
-def centre_crop_to_square(img: Image.Image) -> Image.Image:
-    width, height = img.size
-    if width == height:
-        return img
-    new_size = min(width, height)
-    left = (width - new_size) // 2
-    top = (height - new_size) // 2
-    right = left + new_size
-    bottom = top + new_size
-    return img.crop((left, top, right, bottom))
+def process_image_to_3000_jpeg(file_storage, crop=None):
+    data = file_storage.read()
+    if not data:
+        raise ValueError("Empty upload")
 
+    bio = BytesIO(data)
+    bio.seek(0)
 
-def resize_for_routenote(input_image: Image.Image) -> bytes:
-    img = input_image.convert("RGB")
-    square = centre_crop_to_square(img)
-    resized = square.resize((3000, 3000), Image.Resampling.LANCZOS)
+    with Image.open(bio) as im:
+        # Fix orientation using EXIF and then strip metadata by re-encoding clean
+        im = ImageOps.exif_transpose(im)
 
-    buffer = io.BytesIO()
-    resized.save(buffer, format="JPEG", quality=95, optimize=True, progressive=True)
-    buffer.seek(0)
-    return buffer.getvalue()
+        # Convert to RGB (handle alpha images)
+        if im.mode in ("RGBA", "LA"):
+            bg = Image.new("RGB", im.size, (0, 0, 0))
+            bg.paste(im, mask=im.split()[-1])
+            im = bg
+        elif im.mode != "RGB":
+            im = im.convert("RGB")
 
+        # Manual crop (natural pixel coords)
+        if crop:
+            x = int(crop.get("x", 0))
+            y = int(crop.get("y", 0))
+            w = int(crop.get("w", im.width))
+            h = int(crop.get("h", im.height))
 
-@app.route("/", methods=["GET"])
-def index():
+            x = max(0, min(x, im.width - 1))
+            y = max(0, min(y, im.height - 1))
+            x2 = max(x + 1, min(x + w, im.width))
+            y2 = max(y + 1, min(y + h, im.height))
+            im = im.crop((x, y, x2, y2))
+
+        # Premium square output without distortion (center fit/crop)
+        im = ImageOps.fit(
+            im,
+            (TARGET, TARGET),
+            method=Image.Resampling.LANCZOS,
+            centering=(0.5, 0.5)
+        )
+
+        out = BytesIO()
+        # Metadata stripped: don't pass exif/info
+        im.save(
+            out,
+            format="JPEG",
+            quality=95,       # sweet spot = near-lossless look, smaller & faster
+            optimize=True,
+            progressive=True,
+            subsampling=0     # 4:4:4 chroma = best quality
+        )
+        out.seek(0)
+        return out
+
+@app.route("/")
+def home():
     return render_template("index.html")
-
 
 @app.route("/convert", methods=["POST"])
 def convert():
-    if "cover" not in request.files:
-        return redirect(url_for("index"))
+    f = request.files.get("file")
+    if not f:
+        return jsonify({"error": "No file uploaded"}), 400
 
-    file = request.files["cover"]
-    if not file or file.filename.strip() == "":
-        return redirect(url_for("index"))
+    mode = request.form.get("mode", "auto")
+    crop = None
+
+    if mode == "manual":
+        crop_raw = request.form.get("crop")
+        if crop_raw:
+            try:
+                c = json.loads(crop_raw)
+                crop = {
+                    "x": int(c["x"]),
+                    "y": int(c["y"]),
+                    "w": int(c["w"]),
+                    "h": int(c["h"])
+                }
+            except Exception:
+                return jsonify({"error": "Invalid crop data"}), 400
 
     try:
-        img = Image.open(file.stream)
-    except Exception:
-        return redirect(url_for("index"))
-
-    converted_bytes = resize_for_routenote(img)
-    original_name = Path(file.filename).stem or "cover"
-    download_name = f"{original_name}_routenote_3000x3000.jpg"
+        out = process_image_to_3000_jpeg(f, crop=crop)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
     return send_file(
-        io.BytesIO(converted_bytes),
+        out,
         mimetype="image/jpeg",
         as_attachment=True,
-        download_name=download_name,
+        download_name="Cover_3000px_Premium.jpg",
         max_age=0
     )
 
-
 if __name__ == "__main__":
-    import os
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host="0.0.0.0", port=5000, debug=True)
